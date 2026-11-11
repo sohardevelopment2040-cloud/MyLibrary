@@ -276,6 +276,15 @@ video{width:100%;border-radius:10px;background:#000}
 <datalist id="authorsList"></datalist>
 <datalist id="publishersList"></datalist>
 <div id="toast"></div>
+<div id="dlg" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:200">
+  <div style="background:#fff;border-radius:12px;padding:18px;max-width:420px;width:100%">
+    <div id="dlgMsg" style="white-space:pre-line;font-size:16px;line-height:1.8"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:14px">
+      <button class="btn ghost" id="dlgNo">إلغاء</button>
+      <button class="btn" id="dlgYes">موافق</button>
+    </div>
+  </div>
+</div>
 <div id="printArea"></div>
 
 <script>
@@ -296,6 +305,14 @@ function persist(){try{localStorage.setItem(KEY,JSON.stringify(books))}catch(e){
 function esc(s){return (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2500)}
 const $=id=>document.getElementById(id);
+/* نافذة تأكيد داخل البرنامج بدل نافذة المتصفح */
+function ask(msg,onlyOk){return new Promise(res=>{
+  $('dlgMsg').textContent=msg; $('dlgNo').style.display=onlyOk?'none':'';
+  $('dlg').style.display='flex';
+  const done=v=>{$('dlg').style.display='none';$('dlgYes').onclick=$('dlgNo').onclick=null;res(v)};
+  $('dlgYes').onclick=()=>done(true); $('dlgNo').onclick=()=>done(false);
+})}
+const note=msg=>ask(msg,true);
 
 /* توحيد النص العربي للمقارنة */
 function norm(s){
@@ -422,7 +439,7 @@ function dupCheck(){
   const d=books.filter(b=>b.id!==id&&((i.length>=10&&isbnNorm(b.isbn)===i)||(t.length>2&&similarity(t,b.title)>=.8&&(!a||!b.author||similarity(a,b.author)>=.5))));
   $('dupBox').innerHTML=d.length?`<div class="res found">⚠️ يوجد كتاب مشابه في المكتبة: ${d.map(b=>`<b>${esc(b.title)}</b> — ${esc(b.author)}`).join('، ')}</div>`:'';
 }
-function saveBook(e){
+async function saveBook(e){
   e.preventDefault();
   const id=$('bId').value||('b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
   const o={id}; F.forEach(k=>o[k]=$(fid(k)).value.trim());
@@ -430,14 +447,14 @@ function saveBook(e){
   const ex=books.findIndex(b=>b.id===id);
   if(ex>=0){o.added=books[ex].added;books[ex]=o;toast('تم تحديث الكتاب')}
   else{
-    if($('dupBox').innerHTML&&!confirm('يوجد كتاب مشابه. هل تريد الإضافة على أي حال؟')) return;
+    if($('dupBox').innerHTML&&!await ask('يوجد كتاب مشابه. هل تريد الإضافة على أي حال؟')) return;
     o.added=Date.now();books.push(o);toast('تمت إضافة الكتاب ✓');
   }
   persist(); closeModal('formModal'); render(); doCheck();
 }
 async function delBook(id){
   const b=books.find(x=>x.id===id);
-  if(!b||!confirm(`حذف كتاب «${b.title}»؟`)) return;
+  if(!b||!await ask(`حذف كتاب «${b.title}»؟`)) return;
   await snapshot('قبل الحذف');
   books=books.filter(x=>x.id!==id); persist(); closeModal('viewModal'); render(); doCheck(); toast('تم الحذف');
 }
@@ -495,12 +512,12 @@ function importJSON(inp){
     try{
       const d=JSON.parse(r.result); const arr=Array.isArray(d)?d:d.books;
       if(!Array.isArray(arr)) throw 0;
-      const replace=confirm(`الملف يحتوي ${arr.length} كتاب.\nموافق = استبدال المكتبة الحالية\nإلغاء = دمج مع الكتب الحالية`);
+      const replace=await ask(`الملف يحتوي ${arr.length} كتاب.\nموافق = استبدال المكتبة الحالية\nإلغاء = دمج مع الكتب الحالية`);
       await snapshot('قبل الاستعادة');
       if(replace) books=arr; else{const ids=new Set(books.map(b=>b.id));arr.forEach(b=>{if(!ids.has(b.id))books.push(b)})}
       if(d.settings) settings=Object.assign(settings,d.settings);
       persist(); localStorage.setItem(SKEY,JSON.stringify(settings)); applySettings(); render(); toast('تمت الاستعادة ✓');
-    }catch(e){alert('الملف غير صالح')}
+    }catch(e){note('الملف غير صالح')}
     inp.value='';
   }; r.readAsText(f);
 }
@@ -531,17 +548,17 @@ async function openSnapshots(){
 }
 async function restoreSnap(id){
   const s=(await snapAll()).find(x=>x.id===id); if(!s) return;
-  if(!confirm(`استعادة المكتبة كما كانت (${s.count} كتاب)؟\nسيتم حفظ نسخة من الوضع الحالي قبل الاستعادة.`)) return;
+  if(!await ask(`استعادة المكتبة كما كانت (${s.count} كتاب)؟\nسيتم حفظ نسخة من الوضع الحالي قبل الاستعادة.`)) return;
   await snapshot('قبل الاستعادة');
   books=s.books; persist(); render(); doCheck(); closeModal('snapModal'); toast('تمت الاستعادة ✓');
 }
-async function delSnap(id){if(confirm('حذف هذه النسخة؟')){await snapDel(id);openSnapshots();updateBkStatus()}}
+async function delSnap(id){if(await ask('حذف هذه النسخة؟')){await snapDel(id);openSnapshots();updateBkStatus()}}
 
 /* الحفظ المباشر في ملف (Chrome/Edge على الكمبيوتر) */
 const FS_OK=('showSaveFilePicker' in window);
 let fileHandle=null, fileOk=false, bkTimer=null;
 async function linkBackupFile(){
-  if(!FS_OK){alert('الحفظ المباشر في ملف غير مدعوم في هذا المتصفح (مثل متصفحات الجوال).\nالبرنامج يحفظ نسخاً تلقائية داخل المتصفح، ويمكنك تفعيل خيار التنزيل اليومي.');return}
+  if(!FS_OK){note('الحفظ المباشر في ملف غير مدعوم في هذا المتصفح (مثل متصفحات الجوال).\nالبرنامج يحفظ نسخاً تلقائية داخل المتصفح، ويمكنك تفعيل خيار التنزيل اليومي.');return}
   try{
     fileHandle=await window.showSaveFilePicker({suggestedName:'مكتبتي_نسخة_احتياطية.json',types:[{description:'نسخة احتياطية',accept:{'application/json':['.json']}}]});
     await kvSet('fileHandle',fileHandle); fileOk=true; await writeBackupFile(); toast('تم ربط ملف النسخ الاحتياطي ✓');
@@ -597,13 +614,13 @@ async function updateBkStatus(){
 function applySettings(){$('libTitle').textContent=settings.name;document.title=settings.name}
 function openSettings(){$('sName').value=settings.name;$('setModal').classList.add('show')}
 function saveSettings(){settings.name=$('sName').value.trim()||'مكتبتي الإلكترونية';try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}applySettings();closeModal('setModal');toast('تم الحفظ')}
-async function clearAll(){if(confirm('سيتم حذف جميع الكتب. (تُحفظ نسخة يمكنك استعادتها من «النسخ السابقة»)\nهل أنت متأكد؟')&&confirm('تأكيد أخير: حذف الكل؟')){await snapshot('قبل الحذف');books=[];persist();render();closeModal('setModal');toast('تم حذف كل البيانات')}}
+async function clearAll(){if(await ask('سيتم حذف جميع الكتب. (تُحفظ نسخة يمكنك استعادتها من «النسخ السابقة»)\nهل أنت متأكد؟')&&await ask('تأكيد أخير: حذف الكل؟')){await snapshot('قبل الحذف');books=[];persist();render();closeModal('setModal');toast('تم حذف كل البيانات')}}
 
 /* ماسح الباركود */
 let stream=null, scanTarget='check', scanning=false;
 async function startScan(target){
   scanTarget=target;
-  if(!('BarcodeDetector' in window)){alert('مسح الباركود غير مدعوم في هذا المتصفح.\nجرّب Chrome على أندرويد، أو اكتب رقم ISBN يدوياً.');return}
+  if(!('BarcodeDetector' in window)){note('مسح الباركود غير مدعوم في هذا المتصفح.\nجرّب Chrome على أندرويد، أو اكتب رقم ISBN يدوياً.');return}
   try{
     const det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
@@ -614,7 +631,7 @@ async function startScan(target){
       try{const c=await det.detect(v); if(c.length){const code=c[0].rawValue; stopScan(); gotCode(code); return}}catch(e){}
       requestAnimationFrame(loop);
     }; loop();
-  }catch(e){alert('تعذر فتح الكاميرا. تأكد من منح الإذن وأن الصفحة تعمل عبر https.')}
+  }catch(e){note('تعذر فتح الكاميرا. تأكد من منح الإذن وأن الصفحة تعمل عبر https.')}
 }
 function stopScan(){scanning=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}closeModal('scanModal')}
 function gotCode(code){
@@ -656,7 +673,7 @@ function loadSample(){
 async function removeSample(){
   const n=books.filter(b=>b.sample).length;
   if(!n){toast('لا توجد بيانات تجريبية');return}
-  if(!confirm(`حذف ${n} كتاب تجريبي؟ (كتبك أنت لن تُحذف)`)) return;
+  if(!await ask(`حذف ${n} كتاب تجريبي؟ (كتبك أنت لن تُحذف)`)) return;
   await snapshot('قبل الحذف');
   books=books.filter(b=>!b.sample); persist(); render(); doCheck(); closeModal('setModal'); toast('تم حذف البيانات التجريبية');
 }
