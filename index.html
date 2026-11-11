@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1f4e5f">
+<title>مكتبتي الإلكترونية</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="lib-icon-192.png">
+<link rel="apple-touch-icon" href="lib-apple-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="مكتبتي">
+<style>
+:root{
+  --pri:#1f4e5f; --pri2:#2c7a7b; --acc:#c58b2b; --bg:#f4f1ea; --card:#fff;
+  --txt:#2a2a2a; --mut:#6b6b6b; --ok:#2f855a; --warn:#c05621; --bad:#c53030; --line:#e3ddd0;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Tahoma,"Noto Naskh Arabic",Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:15px}
+header{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+header h1{margin:0;font-size:21px}
+header .sub{font-size:12px;opacity:.85}
+.wrap{max-width:1100px;margin:auto;padding:14px}
+.card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card h2{margin:0 0 10px;font-size:17px;color:var(--pri)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{background:var(--card);border-radius:10px;padding:10px;text-align:center;border-top:3px solid var(--acc)}
+.stat b{display:block;font-size:22px;color:var(--pri)}
+.stat span{font-size:12px;color:var(--mut)}
+input,select,textarea{font:inherit;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--pri2);border-color:transparent}
+label{font-size:13px;color:var(--mut);display:block;margin-bottom:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.btn{font:inherit;border:0;border-radius:8px;padding:9px 14px;cursor:pointer;background:var(--pri);color:#fff;white-space:nowrap}
+.btn:hover{filter:brightness(1.1)}
+.btn.acc{background:var(--acc)} .btn.ok{background:var(--ok)} .btn.bad{background:var(--bad)}
+.btn.ghost{background:#fff;color:var(--pri);border:1px solid var(--pri)}
+.btn.sm{padding:5px 9px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.check-box{border:2px dashed var(--acc);background:#fffaf0}
+.check-box .row input{flex:1;min-width:200px;font-size:17px;padding:12px}
+#checkResult{margin-top:10px}
+.res{border-radius:10px;padding:12px;font-size:15px}
+.res.found{background:#fdecea;border:1px solid #f5b7b1;color:#8a1c1c}
+.res.similar{background:#fff4e5;border:1px solid #f6c48b;color:#7a3e00}
+.res.none{background:#e9f7ef;border:1px solid #a9dfbf;color:#1d5e3a}
+.res ul{margin:8px 0 0;padding-inline-start:20px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+th{background:#f7f4ec;color:var(--pri);position:sticky;top:0}
+tr:hover td{background:#fbf9f4}
+.tbl{overflow:auto;max-height:65vh}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;background:#eef2f3;color:var(--pri)}
+.b-read{background:#e6f4ea;color:var(--ok)} .b-reading{background:#fff4e5;color:var(--warn)} .b-unread{background:#eef2f3;color:#555}
+.b-lent{background:#fdecea;color:var(--bad)}
+.stars{color:var(--acc);letter-spacing:1px}
+.muted{color:var(--mut);font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:20px;z-index:50;overflow:auto}
+.modal.show{display:flex}
+.modal .box{background:#fff;border-radius:12px;max-width:760px;width:100%;padding:16px}
+.modal .box h3{margin:0 0 12px;color:var(--pri)}
+.full{grid-column:1/-1}
+.dup{margin-top:8px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 18px;border-radius:8px;display:none;z-index:99}
+video{width:100%;border-radius:10px;background:#000}
+#printArea{display:none}
+@media (max-width:700px){
+  .hide-m{display:none}
+  th,td{font-size:13px;padding:6px 4px}
+}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff}
+  header,.wrap,.modal,#toast{display:none!important}
+  #printArea{display:block}
+  #printArea h1{text-align:center;margin:0;font-size:20px;color:#1f4e5f}
+  #printArea .meta{text-align:center;font-size:12px;color:#555;margin:4px 0 12px}
+  #printArea table{font-size:11.5px}
+  #printArea th{background:#1f4e5f!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;position:static}
+  #printArea td,#printArea th{border:1px solid #bbb;padding:5px}
+  #printArea tr:nth-child(even) td{background:#f5f5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #printArea tr{page-break-inside:avoid}
+  #printArea .foot{margin-top:10px;font-size:11px;color:#666;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📚 <span id="libTitle">مكتبتي الإلكترونية</span></h1>
+    <div class="sub">افحص قبل أن تشتري — سجل كتبك في مكان واحد</div>
+  </div>
+  <div class="row">
+    <button class="btn acc" onclick="openForm()">➕ إضافة كتاب</button>
+    <button class="btn ghost" style="background:#fff" onclick="openPdf()">🖨️ قائمة PDF</button>
+    <button class="btn ghost" style="background:#fff" onclick="openSettings()">⚙️</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="sampleBar" class="res similar" style="display:none;margin-bottom:14px;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <span>ℹ️ هذه <b>بيانات تجريبية</b> لتجربة البرنامج — جرّب الفحص مثلاً بكتابة: <b>الاحياء</b> أو <b>ابن كثير</b> أو <b>العادات</b></span>
+    <button class="btn sm bad" onclick="removeSample()">🗑️ حذف البيانات التجريبية</button>
+  </div>
+
+  <!-- فحص قبل الشراء -->
+  <div class="card check-box">
+    <h2>🔍 فحص قبل الشراء: هل الكتاب موجود عندي؟</h2>
+    <div class="row">
+      <input id="checkInput" placeholder="اكتب اسم الكتاب أو المؤلف أو رقم ISBN..." oninput="doCheck()" autocomplete="off">
+      <button class="btn" id="scanBtn" onclick="startScan('check')">📷 مسح الباركود</button>
+    </div>
+    <div id="checkResult"></div>
+  </div>
+
+  <!-- إحصائيات -->
+  <div class="stats" id="stats" style="margin-bottom:14px"></div>
+
+  <!-- القائمة -->
+  <div class="card">
+    <h2>📖 قائمة الكتب</h2>
+    <div class="grid" style="margin-bottom:10px">
+      <input id="q" placeholder="بحث في القائمة..." oninput="render()">
+      <select id="fCat" onchange="render()"><option value="">كل التصنيفات</option></select>
+      <select id="fStatus" onchange="render()">
+        <option value="">كل الحالات</option>
+        <option>لم يُقرأ</option><option>قيد القراءة</option><option>مقروء</option><option>مُعار</option>
+      </select>
+      <select id="sort" onchange="render()">
+        <option value="added">الأحدث إضافة</option>
+        <option value="title">العنوان (أ-ي)</option>
+        <option value="author">المؤلف (أ-ي)</option>
+        <option value="year">سنة النشر</option>
+        <option value="rating">التقييم</option>
+      </select>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr>
+          <th>#</th><th>العنوان</th><th>المؤلف</th><th class="hide-m">التصنيف</th>
+          <th class="hide-m">الناشر</th><th class="hide-m">السنة</th><th class="hide-m">الرف</th>
+          <th>الحالة</th><th class="hide-m">التقييم</th><th></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="muted" id="countLine" style="margin-top:8px"></div>
+  </div>
+
+  <!-- النسخ الاحتياطي -->
+  <div class="card">
+    <h2>💾 النسخ الاحتياطي التلقائي</h2>
+    <div id="bkStatus" style="line-height:1.9"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="bkLinkBtn" onclick="linkBackupFile()">📁 اختيار ملف النسخ الاحتياطي</button>
+      <button class="btn acc" id="bkResumeBtn" style="display:none" onclick="resumeBackup()">🔓 تفعيل الحفظ في الملف</button>
+      <button class="btn ghost" onclick="openSnapshots()">🕘 النسخ السابقة</button>
+      <button class="btn ghost" onclick="document.getElementById('impFile').click()">⬆️ استعادة من ملف</button>
+      <input type="file" id="impFile" accept=".json" style="display:none" onchange="importJSON(this)">
+    </div>
+    <label style="display:flex;gap:6px;align-items:center;margin-top:10px;color:var(--txt)">
+      <input type="checkbox" id="bkDaily" style="width:auto" onchange="setDaily(this.checked)">
+      تنزيل نسخة يومية تلقائياً إلى مجلد التنزيلات (مفيد للجوال)
+    </label>
+  </div>
+</div>
+
+<!-- نموذج الكتاب -->
+<div class="modal" id="formModal">
+  <div class="box">
+    <h3 id="formTitle">إضافة كتاب جديد</h3>
+    <form id="bookForm" onsubmit="saveBook(event)">
+      <input type="hidden" id="bId">
+      <div class="grid">
+        <div class="full"><label>اسم الكتاب *</label><input id="bTitle" required oninput="dupCheck()"></div>
+        <div><label>المؤلف *</label><input id="bAuthor" required oninput="dupCheck()" list="authorsList"></div>
+        <div><label>المترجم</label><input id="bTranslator"></div>
+        <div><label>الناشر / دار النشر</label><input id="bPublisher" list="publishersList"></div>
+        <div><label>سنة النشر</label><input id="bYear" type="number" min="1" max="2100"></div>
+        <div><label>الطبعة</label><input id="bEdition" placeholder="مثال: الثالثة"></div>
+        <div><label>التصنيف</label><input id="bCategory" list="catList" placeholder="دين، تاريخ، أدب..."></div>
+        <div><label>اللغة</label>
+          <select id="bLang"><option>العربية</option><option>الإنجليزية</option><option>أخرى</option></select></div>
+        <div><label>ISBN</label>
+          <div class="row" style="flex-wrap:nowrap"><input id="bIsbn" oninput="dupCheck()"><button type="button" class="btn sm" onclick="startScan('form')">📷</button></div></div>
+        <div><label>عدد الأجزاء</label><input id="bVolumes" type="number" min="1" value="1"></div>
+        <div><label>عدد الصفحات</label><input id="bPages" type="number" min="1"></div>
+        <div><label>الصيغة</label>
+          <select id="bFormat"><option>ورقي</option><option>إلكتروني (PDF)</option><option>صوتي</option></select></div>
+        <div><label>مكان الكتاب (الرف/الخزانة)</label><input id="bShelf" placeholder="مثال: رف 3"></div>
+        <div><label>حالة القراءة</label>
+          <select id="bStatus"><option>لم يُقرأ</option><option>قيد القراءة</option><option>مقروء</option><option>مُعار</option></select></div>
+        <div><label>مُعار إلى</label><input id="bLentTo"></div>
+        <div><label>تاريخ الشراء</label><input id="bDate" type="date"></div>
+        <div><label>السعر (ر.ع)</label><input id="bPrice" type="number" step="0.001" min="0"></div>
+        <div><label>مكان الشراء</label><input id="bSource" placeholder="معرض الكتاب، مكتبة..."></div>
+        <div><label>التقييم</label>
+          <select id="bRating"><option value="0">بدون</option><option value="1">★</option><option value="2">★★</option><option value="3">★★★</option><option value="4">★★★★</option><option value="5">★★★★★</option></select></div>
+        <div class="full"><label>ملاحظات</label><textarea id="bNotes" rows="2"></textarea></div>
+      </div>
+      <div id="dupBox" class="dup"></div>
+      <div class="row" style="margin-top:12px;justify-content:flex-end">
+        <button type="button" class="btn ghost" onclick="closeModal('formModal')">إلغاء</button>
+        <button type="submit" class="btn ok">💾 حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- تفاصيل -->
+<div class="modal" id="viewModal"><div class="box" id="viewBox"></div></div>
+
+<!-- PDF -->
+<div class="modal" id="pdfModal">
+  <div class="box">
+    <h3>🖨️ إنشاء قائمة PDF</h3>
+    <div class="grid">
+      <div><label>الكتب</label>
+        <select id="pScope"><option value="all">كل الكتب</option><option value="filtered">حسب البحث والتصفية الحالية</option></select></div>
+      <div><label>الترتيب</label>
+        <select id="pSort"><option value="title">العنوان</option><option value="author">المؤلف</option><option value="category">التصنيف</option><option value="shelf">الرف</option></select></div>
+      <div><label>عنوان القائمة</label><input id="pTitle"></div>
+    </div>
+    <label style="margin-top:10px">الأعمدة</label>
+    <div class="row" id="pCols"></div>
+    <p class="muted">سيفتح نافذة الطباعة — اختر «حفظ كـ PDF» (Save as PDF).</p>
+    <div class="row" style="justify-content:flex-end">
+      <button class="btn ghost" onclick="closeModal('pdfModal')">إلغاء</button>
+      <button class="btn acc" onclick="makePdf()">📄 إنشاء PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- الإعدادات -->
+<div class="modal" id="setModal">
+  <div class="box">
+    <h3>⚙️ الإعدادات</h3>
+    <label>اسم المكتبة (يظهر في الأعلى وفي PDF)</label>
+    <input id="sName">
+    <div class="row" style="margin-top:12px;justify-content:space-between">
+      <div class="row">
+        <button class="btn bad" onclick="clearAll()">🗑️ حذف كل البيانات</button>
+        <button class="btn ghost" onclick="loadSample();closeModal('setModal')">🧪 تعبئة تجريبية</button>
+      </div>
+      <div class="row">
+        <button class="btn ghost" onclick="closeModal('setModal')">إلغاء</button>
+        <button class="btn ok" onclick="saveSettings()">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- الماسح -->
+<div class="modal" id="scanModal">
+  <div class="box">
+    <h3>📷 وجّه الكاميرا نحو باركود الكتاب</h3>
+    <video id="video" playsinline muted></video>
+    <div class="row" style="justify-content:flex-end;margin-top:10px">
+      <button class="btn ghost" onclick="stopScan()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- النسخ السابقة -->
+<div class="modal" id="snapModal">
+  <div class="box">
+    <h3>🕘 النسخ الاحتياطية التلقائية</h3>
+    <p class="muted">تُحفظ نسخة تلقائياً كل يوم تفتح فيه البرنامج، وقبل أي حذف أو استعادة. يحتفظ البرنامج بآخر 30 نسخة.</p>
+    <div class="tbl" style="max-height:55vh"><table><thead><tr><th>التاريخ</th><th>النوع</th><th>عدد الكتب</th><th></th></tr></thead><tbody id="snapBody"></tbody></table></div>
+    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn ghost" onclick="closeModal('snapModal')">إغلاق</button></div>
+  </div>
+</div>
+
+<datalist id="catList"></datalist>
+<datalist id="authorsList"></datalist>
+<datalist id="publishersList"></datalist>
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+const KEY='eLibrary_books_v1', SKEY='eLibrary_settings_v1';
+let books=[], settings={name:'مكتبتي الإلكترونية'};
+const DEF_CATS=['القرآن وعلومه','الحديث','الفقه','العقيدة','السيرة','التاريخ','الأدب','الشعر','الرواية','اللغة العربية','تطوير الذات','الإدارة','العلوم','التقنية','الأطفال','عُمان','أخرى'];
+const COLS=[
+ ['title','العنوان',1],['author','المؤلف',1],['translator','المترجم',0],['publisher','الناشر',1],
+ ['year','السنة',1],['edition','الطبعة',0],['category','التصنيف',1],['shelf','الرف',1],['status','الحالة',0],
+ ['format','الصيغة',0],['isbn','ISBN',0],['price','السعر',0],['rating','التقييم',0]
+];
+
+function load(){
+  try{books=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){books=[]}
+  try{settings=Object.assign(settings,JSON.parse(localStorage.getItem(SKEY))||{})}catch(e){}
+}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(books))}catch(e){toast('تعذر الحفظ في المتصفح')}autoBackup()}
+function esc(s){return (s??'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2500)}
+const $=id=>document.getElementById(id);
+
+/* توحيد النص العربي للمقارنة */
+function norm(s){
+  return (s||'').toString().toLowerCase()
+   .replace(/[ً-ٰٟـ]/g,'')
+   .replace(/[أإآٱ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/ؤ/g,'و').replace(/ئ/g,'ي')
+   .replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+}
+const STOP=new Set(['في','من','على','عن','الي','الى','و','ال','the','of','a','an','and','to','in']);
+function tokens(s){return norm(s).split(' ').map(w=>w.replace(/^(وال|بال|فال|كال|لل|ال)(?=..)/,'')).filter(w=>w&&!STOP.has(w))}
+function isbnNorm(s){return (s||'').replace(/[^0-9xX]/g,'').toUpperCase()}
+function similarity(a,b){
+  const na=norm(a),nb=norm(b); if(!na||!nb) return 0;
+  if(na===nb) return 1;
+  if(na.length>=3&&nb.length>=3&&(na.includes(nb)||nb.includes(na))) return .85;
+  const A=new Set(tokens(a)),B=new Set(tokens(b)); if(!A.size||!B.size) return 0;
+  let inter=0; A.forEach(w=>{if(B.has(w))inter++; else{for(const x of B){if(w.length>3&&x.length>3&&(w.startsWith(x)||x.startsWith(w))){inter+=.7;break}}}});
+  return inter/Math.min(A.size,B.size)*.8;
+}
+
+/* فحص قبل الشراء */
+function findMatches(q){
+  const qi=isbnNorm(q);
+  const out=[];
+  books.forEach(b=>{
+    let s=0;
+    if(qi.length>=10&&isbnNorm(b.isbn)===qi) s=1;
+    else s=Math.max(similarity(q,b.title), similarity(q,b.author)*.9, similarity(q,b.title+' '+b.author));
+    if(s>=.45) out.push({b,s});
+  });
+  return out.sort((x,y)=>y.s-x.s).slice(0,8);
+}
+function doCheck(){
+  const q=$('checkInput').value.trim(), r=$('checkResult');
+  if(q.length<2){r.innerHTML='';return}
+  const m=findMatches(q);
+  const strong=m.filter(x=>x.s>=.8), weak=m.filter(x=>x.s<.8);
+  const li=x=>`<li><a href="#" onclick="viewBook('${x.b.id}');return false"><b>${esc(x.b.title)}</b></a> — ${esc(x.b.author)}${x.b.shelf?` <span class="badge">📍 ${esc(x.b.shelf)}</span>`:''}${x.b.volumes>1?` <span class="badge">${x.b.volumes} أجزاء</span>`:''}</li>`;
+  if(strong.length){
+    r.innerHTML=`<div class="res found">⛔ <b>الكتاب موجود في مكتبتك — لا داعي لشرائه</b><ul>${strong.map(li).join('')}</ul>${weak.length?`<div style="margin-top:8px">كتب مشابهة:</div><ul>${weak.map(li).join('')}</ul>`:''}</div>`;
+  }else if(weak.length){
+    r.innerHTML=`<div class="res similar">⚠️ <b>لم أجد تطابقاً تاماً، لكن توجد كتب مشابهة — تأكد منها:</b><ul>${weak.map(li).join('')}</ul>
+      <button class="btn sm ok" style="margin-top:8px" onclick="addFromCheck()">➕ إضافته كتاباً جديداً</button></div>`;
+  }else{
+    r.innerHTML=`<div class="res none">✅ <b>الكتاب غير موجود في مكتبتك</b> — يمكنك شراؤه.
+      <button class="btn sm ok" style="margin-inline-start:8px" onclick="addFromCheck()">➕ أضفه للمكتبة بعد الشراء</button></div>`;
+  }
+}
+function addFromCheck(){
+  const q=$('checkInput').value.trim();
+  openForm();
+  if(isbnNorm(q).length>=10&&/^[\d\-\sxX]+$/.test(q)) $('bIsbn').value=q; else $('bTitle').value=q;
+  dupCheck();
+}
+
+/* عرض */
+function statusBadge(s){const c={'مقروء':'b-read','قيد القراءة':'b-reading','مُعار':'b-lent'}[s]||'b-unread';return `<span class="badge ${c}">${esc(s||'لم يُقرأ')}</span>`}
+function stars(n){n=+n||0;return n?'<span class="stars">'+'★'.repeat(n)+'</span>':''}
+function filtered(){
+  const q=$('q').value.trim(), cat=$('fCat').value, st=$('fStatus').value, so=$('sort').value;
+  let list=books.filter(b=>{
+    if(cat&&b.category!==cat) return false;
+    if(st&&(b.status||'لم يُقرأ')!==st) return false;
+    if(q){const n=norm(q);const hay=norm([b.title,b.author,b.translator,b.publisher,b.category,b.shelf,b.isbn,b.notes].join(' '));if(!hay.includes(n)) return false}
+    return true;
+  });
+  const cmp=(a,b)=>(a||'').localeCompare(b||'','ar');
+  if(so==='title') list.sort((a,b)=>cmp(a.title,b.title));
+  else if(so==='author') list.sort((a,b)=>cmp(a.author,b.author));
+  else if(so==='year') list.sort((a,b)=>(+b.year||0)-(+a.year||0));
+  else if(so==='rating') list.sort((a,b)=>(+b.rating||0)-(+a.rating||0));
+  else list.sort((a,b)=>(b.added||0)-(a.added||0));
+  return list;
+}
+function render(){
+  const list=filtered();
+  $('tbody').innerHTML=list.length?list.map((b,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><a href="#" onclick="viewBook('${b.id}');return false"><b>${esc(b.title)}</b></a>${b.volumes>1?` <span class="muted">(${b.volumes} ج)</span>`:''}</td>
+    <td>${esc(b.author)}</td><td class="hide-m">${esc(b.category)}</td><td class="hide-m">${esc(b.publisher)}</td>
+    <td class="hide-m">${esc(b.year)}</td><td class="hide-m">${esc(b.shelf)}</td>
+    <td>${statusBadge(b.status)}</td><td class="hide-m">${stars(b.rating)}</td>
+    <td style="white-space:nowrap"><button class="btn sm ghost" onclick="openForm('${b.id}')">✏️</button> <button class="btn sm bad" onclick="delBook('${b.id}')">🗑️</button></td>
+  </tr>`).join(''):`<tr><td colspan="10" style="text-align:center;padding:30px" class="muted">لا توجد كتب بعد — اضغط «إضافة كتاب» للبدء</td></tr>`;
+  $('countLine').textContent=`المعروض: ${list.length} من ${books.length} كتاب`;
+  renderStats(); fillLists(); sampleBanner();
+}
+function renderStats(){
+  const c=s=>books.filter(b=>(b.status||'لم يُقرأ')===s).length;
+  const total=books.reduce((a,b)=>a+(+b.price||0),0);
+  const authors=new Set(books.map(b=>norm(b.author)).filter(Boolean)).size;
+  $('stats').innerHTML=[
+    ['📚',books.length,'إجمالي الكتب'],['✍️',authors,'مؤلف'],['✅',c('مقروء'),'مقروء'],
+    ['📖',c('قيد القراءة'),'قيد القراءة'],['📕',c('لم يُقرأ'),'لم يُقرأ'],['💰',total.toFixed(3),'إجمالي التكلفة (ر.ع)']
+  ].map(([i,n,l])=>`<div class="stat"><b>${n}</b><span>${i} ${l}</span></div>`).join('');
+}
+function fillLists(){
+  const uniq=a=>[...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,'ar'));
+  const cats=uniq([...DEF_CATS,...books.map(b=>b.category)]);
+  $('catList').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
+  $('authorsList').innerHTML=uniq(books.map(b=>b.author)).map(c=>`<option value="${esc(c)}">`).join('');
+  $('publishersList').innerHTML=uniq(books.map(b=>b.publisher)).map(c=>`<option value="${esc(c)}">`).join('');
+  const used=uniq(books.map(b=>b.category)), cur=$('fCat').value;
+  $('fCat').innerHTML='<option value="">كل التصنيفات</option>'+used.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('');
+}
+
+/* إضافة وتعديل */
+const F=['title','author','translator','publisher','year','edition','category','lang','isbn','volumes','pages','format','shelf','status','lentTo','date','price','source','rating','notes'];
+const fid=k=>'b'+k[0].toUpperCase()+k.slice(1);
+function openForm(id){
+  $('bookForm').reset(); $('bId').value=''; $('dupBox').innerHTML='';
+  if(id){
+    const b=books.find(x=>x.id===id); if(!b) return;
+    $('formTitle').textContent='تعديل بيانات الكتاب'; $('bId').value=id;
+    F.forEach(k=>{if(b[k]!==undefined) $(fid(k)).value=b[k]});
+  }else{
+    $('formTitle').textContent='إضافة كتاب جديد';
+    $('bDate').value=new Date().toISOString().slice(0,10);
+  }
+  closeModal('viewModal'); $('formModal').classList.add('show'); setTimeout(()=>$('bTitle').focus(),50);
+}
+function dupCheck(){
+  const id=$('bId').value, t=$('bTitle').value.trim(), a=$('bAuthor').value.trim(), i=isbnNorm($('bIsbn').value);
+  const d=books.filter(b=>b.id!==id&&((i.length>=10&&isbnNorm(b.isbn)===i)||(t.length>2&&similarity(t,b.title)>=.8&&(!a||!b.author||similarity(a,b.author)>=.5))));
+  $('dupBox').innerHTML=d.length?`<div class="res found">⚠️ يوجد كتاب مشابه في المكتبة: ${d.map(b=>`<b>${esc(b.title)}</b> — ${esc(b.author)}`).join('، ')}</div>`:'';
+}
+function saveBook(e){
+  e.preventDefault();
+  const id=$('bId').value||('b'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+  const o={id}; F.forEach(k=>o[k]=$(fid(k)).value.trim());
+  o.volumes=+o.volumes||1; o.rating=+o.rating||0;
+  const ex=books.findIndex(b=>b.id===id);
+  if(ex>=0){o.added=books[ex].added;books[ex]=o;toast('تم تحديث الكتاب')}
+  else{
+    if($('dupBox').innerHTML&&!confirm('يوجد كتاب مشابه. هل تريد الإضافة على أي حال؟')) return;
+    o.added=Date.now();books.push(o);toast('تمت إضافة الكتاب ✓');
+  }
+  persist(); closeModal('formModal'); render(); doCheck();
+}
+async function delBook(id){
+  const b=books.find(x=>x.id===id);
+  if(!b||!confirm(`حذف كتاب «${b.title}»؟`)) return;
+  await snapshot('قبل الحذف');
+  books=books.filter(x=>x.id!==id); persist(); closeModal('viewModal'); render(); doCheck(); toast('تم الحذف');
+}
+function viewBook(id){
+  const b=books.find(x=>x.id===id); if(!b) return;
+  const r=(l,v)=>v?`<tr><th style="width:35%">${l}</th><td>${v}</td></tr>`:'';
+  $('viewBox').innerHTML=`<h3>📘 ${esc(b.title)}</h3><table>
+   ${r('المؤلف',esc(b.author))}${r('المترجم',esc(b.translator))}${r('الناشر',esc(b.publisher))}
+   ${r('سنة النشر',esc(b.year))}${r('الطبعة',esc(b.edition))}${r('التصنيف',esc(b.category))}${r('اللغة',esc(b.lang))}
+   ${r('ISBN',esc(b.isbn))}${r('الأجزاء',b.volumes>1?b.volumes:'')}${r('الصفحات',esc(b.pages))}${r('الصيغة',esc(b.format))}
+   ${r('المكان',esc(b.shelf))}${r('الحالة',statusBadge(b.status))}${r('مُعار إلى',esc(b.lentTo))}
+   ${r('تاريخ الشراء',esc(b.date))}${r('السعر',b.price?esc(b.price)+' ر.ع':'')}${r('مكان الشراء',esc(b.source))}
+   ${r('التقييم',stars(b.rating))}${r('ملاحظات',esc(b.notes).replace(/\n/g,'<br>'))}
+  </table><div class="row" style="justify-content:flex-end;margin-top:12px">
+   <button class="btn bad" onclick="delBook('${b.id}')">🗑️ حذف</button>
+   <button class="btn" onclick="openForm('${b.id}')">✏️ تعديل</button>
+   <button class="btn ghost" onclick="closeModal('viewModal')">إغلاق</button></div>`;
+  $('viewModal').classList.add('show');
+}
+function closeModal(id){$(id).classList.remove('show')}
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){if(m.id==='scanModal')stopScan();else m.classList.remove('show')}}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.modal.show').forEach(m=>m.id==='scanModal'?stopScan():m.classList.remove('show'))}});
+
+/* PDF */
+function openPdf(){
+  if(!books.length){toast('لا توجد كتب لطباعتها');return}
+  $('pTitle').value='قائمة كتب '+settings.name;
+  $('pCols').innerHTML=COLS.map(([k,l,d])=>`<label style="display:flex;gap:4px;align-items:center;margin:0 6px 4px 0;color:var(--txt)"><input type="checkbox" value="${k}" ${d?'checked':''} style="width:auto"> ${l}</label>`).join('');
+  $('pdfModal').classList.add('show');
+}
+function makePdf(){
+  let list=$('pScope').value==='filtered'?filtered():[...books];
+  const k=$('pSort').value; list.sort((a,b)=>(a[k]||'').toString().localeCompare((b[k]||'').toString(),'ar')||(a.title||'').localeCompare(b.title||'','ar'));
+  const cols=[...$('pCols').querySelectorAll('input:checked')].map(i=>COLS.find(c=>c[0]===i.value));
+  if(!cols.length){toast('اختر عموداً واحداً على الأقل');return}
+  const cell=(b,c)=>c==='rating'?(b.rating?'★'.repeat(b.rating):''):c==='status'?(b.status||'لم يُقرأ'):esc(b[c])+(c==='title'&&b.volumes>1?` (${b.volumes} ج)`:'');
+  const d=new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
+  $('printArea').innerHTML=`<h1>${esc($('pTitle').value)}</h1>
+   <div class="meta">عدد الكتب: ${list.length} — تاريخ الإصدار: ${d}</div>
+   <table><thead><tr><th>م</th>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead>
+   <tbody>${list.map((b,i)=>`<tr><td>${i+1}</td>${cols.map(c=>`<td>${cell(b,c[0])}</td>`).join('')}</tr>`).join('')}</tbody></table>
+   <div class="foot">${esc(settings.name)}</div>`;
+  closeModal('pdfModal');
+  const old=document.title; document.title=$('pTitle').value;
+  setTimeout(()=>{window.print();document.title=old},200);
+}
+
+/* نسخ احتياطي */
+function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function stamp(){return new Date().toISOString().slice(0,10)}
+function exportJSON(silent){download(`مكتبتي_${stamp()}.json`,JSON.stringify({settings,books},null,1),'application/json');if(!silent)toast('تم حفظ النسخة')}
+function importJSON(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=async()=>{
+    try{
+      const d=JSON.parse(r.result); const arr=Array.isArray(d)?d:d.books;
+      if(!Array.isArray(arr)) throw 0;
+      const replace=confirm(`الملف يحتوي ${arr.length} كتاب.\nموافق = استبدال المكتبة الحالية\nإلغاء = دمج مع الكتب الحالية`);
+      await snapshot('قبل الاستعادة');
+      if(replace) books=arr; else{const ids=new Set(books.map(b=>b.id));arr.forEach(b=>{if(!ids.has(b.id))books.push(b)})}
+      if(d.settings) settings=Object.assign(settings,d.settings);
+      persist(); localStorage.setItem(SKEY,JSON.stringify(settings)); applySettings(); render(); toast('تمت الاستعادة ✓');
+    }catch(e){alert('الملف غير صالح')}
+    inp.value='';
+  }; r.readAsText(f);
+}
+/* ===== النسخ الاحتياطي التلقائي ===== */
+function saveS(){try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}}
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('eLibraryDB',1);r.onupgradeneeded=()=>{r.result.createObjectStore('kv');r.result.createObjectStore('snaps',{keyPath:'id'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbReq(store,mode,fn){try{const db=await idb();return await new Promise(r=>{const t=db.transaction(store,mode);const q=fn(t.objectStore(store));t.oncomplete=()=>r(q&&q.result);t.onerror=()=>r(null)})}catch(e){return null}}
+const kvGet=k=>idbReq('kv','readonly',s=>s.get(k));
+const kvSet=(k,v)=>idbReq('kv','readwrite',s=>s.put(v,k));
+const snapAll=async()=>((await idbReq('snaps','readonly',s=>s.getAll()))||[]).sort((a,b)=>b.id-a.id);
+const snapPut=o=>idbReq('snaps','readwrite',s=>s.put(o));
+const snapDel=id=>idbReq('snaps','readwrite',s=>s.delete(id));
+
+async function snapshot(label){
+  if(!books.length) return;
+  const copy=JSON.parse(JSON.stringify(books));
+  await snapPut({id:Date.now(),day:stamp(),label,count:copy.length,books:copy});
+  const all=await snapAll(); for(const s of all.slice(30)) await snapDel(s.id);
+  updateBkStatus();
+}
+async function dailySnapshot(){const all=await snapAll();if(!all.some(s=>s.day===stamp()&&s.label==='يومية')) await snapshot('يومية'); else updateBkStatus()}
+async function openSnapshots(){
+  const all=await snapAll();
+  $('snapBody').innerHTML=all.length?all.map(s=>`<tr><td>${new Date(s.id).toLocaleString('ar-OM',{dateStyle:'medium',timeStyle:'short'})}</td><td>${esc(s.label)}</td><td>${s.count}</td>
+    <td style="white-space:nowrap"><button class="btn sm ok" onclick="restoreSnap(${s.id})">↩️ استعادة</button> <button class="btn sm bad" onclick="delSnap(${s.id})">🗑️</button></td></tr>`).join('')
+    :'<tr><td colspan="4" class="muted" style="text-align:center;padding:20px">لا توجد نسخ بعد</td></tr>';
+  $('snapModal').classList.add('show');
+}
+async function restoreSnap(id){
+  const s=(await snapAll()).find(x=>x.id===id); if(!s) return;
+  if(!confirm(`استعادة المكتبة كما كانت (${s.count} كتاب)؟\nسيتم حفظ نسخة من الوضع الحالي قبل الاستعادة.`)) return;
+  await snapshot('قبل الاستعادة');
+  books=s.books; persist(); render(); doCheck(); closeModal('snapModal'); toast('تمت الاستعادة ✓');
+}
+async function delSnap(id){if(confirm('حذف هذه النسخة؟')){await snapDel(id);openSnapshots();updateBkStatus()}}
+
+/* الحفظ المباشر في ملف (Chrome/Edge على الكمبيوتر) */
+const FS_OK=('showSaveFilePicker' in window);
+let fileHandle=null, fileOk=false, bkTimer=null;
+async function linkBackupFile(){
+  if(!FS_OK){alert('الحفظ المباشر في ملف غير مدعوم في هذا المتصفح (مثل متصفحات الجوال).\nالبرنامج يحفظ نسخاً تلقائية داخل المتصفح، ويمكنك تفعيل خيار التنزيل اليومي.');return}
+  try{
+    fileHandle=await window.showSaveFilePicker({suggestedName:'مكتبتي_نسخة_احتياطية.json',types:[{description:'نسخة احتياطية',accept:{'application/json':['.json']}}]});
+    await kvSet('fileHandle',fileHandle); fileOk=true; await writeBackupFile(); toast('تم ربط ملف النسخ الاحتياطي ✓');
+  }catch(e){}
+  updateBkStatus();
+}
+async function initFile(){
+  if(!FS_OK) return;
+  fileHandle=await kvGet('fileHandle'); if(!fileHandle) return;
+  try{fileOk=(await fileHandle.queryPermission({mode:'readwrite'}))==='granted'}catch(e){fileOk=false}
+  if(fileOk) writeBackupFile();
+  updateBkStatus();
+}
+async function resumeBackup(){
+  if(!fileHandle) return;
+  try{fileOk=(await fileHandle.requestPermission({mode:'readwrite'}))==='granted'}catch(e){fileOk=false}
+  if(fileOk){await writeBackupFile();toast('تم تفعيل الحفظ في الملف ✓')}
+  updateBkStatus();
+}
+async function writeBackupFile(){
+  if(!fileHandle||!fileOk) return;
+  try{
+    const w=await fileHandle.createWritable();
+    await w.write(JSON.stringify({savedAt:new Date().toISOString(),settings,books},null,1)); await w.close();
+    settings.lastFile=Date.now(); saveS();
+  }catch(e){fileOk=false}
+  updateBkStatus();
+}
+/* التنزيل اليومي */
+function setDaily(v){settings.daily=v;saveS();updateBkStatus();if(v)toast('سيتم تنزيل نسخة مع أول تعديل في كل يوم')}
+function dailyDownload(){
+  if(!settings.daily||!books.some(b=>!b.sample)||settings.lastDl===stamp()) return;
+  exportJSON(true); settings.lastDl=stamp(); saveS();
+}
+function autoBackup(){clearTimeout(bkTimer);bkTimer=setTimeout(()=>{writeBackupFile();dailyDownload()},1200)}
+
+async function updateBkStatus(){
+  const el=$('bkStatus'); if(!el) return;
+  const all=await snapAll(), fmt=t=>new Date(t).toLocaleString('ar-OM',{dateStyle:'medium',timeStyle:'short'});
+  let h=`✅ <b>نسخ داخلية تلقائية:</b> ${all.length} نسخة${all.length?` — آخرها ${fmt(all[0].id)}`:''}<br>`;
+  if(!FS_OK) h+=`ℹ️ الحفظ المباشر في ملف غير متاح في هذا المتصفح — فعّل «التنزيل اليومي» ليكون عندك ملف خارج المتصفح.`;
+  else if(fileHandle&&fileOk) h+=`✅ <b>الحفظ في الملف مفعّل:</b> «${esc(fileHandle.name)}» يُحدَّث تلقائياً مع كل تعديل${settings.lastFile?` — آخر حفظ ${fmt(settings.lastFile)}`:''}`;
+  else if(fileHandle) h+=`⚠️ الملف «${esc(fileHandle.name)}» مربوط، لكن المتصفح يطلب إذنك بعد إعادة فتح البرنامج — اضغط «تفعيل الحفظ في الملف».`;
+  else h+=`⚠️ لم يتم اختيار ملف بعد — اضغط «اختيار ملف النسخ الاحتياطي» مرة واحدة فقط، وبعدها يُحفظ تلقائياً.`;
+  el.innerHTML=h;
+  $('bkLinkBtn').textContent=fileHandle?'📁 تغيير ملف النسخ الاحتياطي':'📁 اختيار ملف النسخ الاحتياطي';
+  $('bkLinkBtn').style.display=FS_OK?'':'none';
+  $('bkResumeBtn').style.display=(fileHandle&&!fileOk)?'':'none';
+  $('bkDaily').checked=!!settings.daily;
+}
+
+/* إعدادات */
+function applySettings(){$('libTitle').textContent=settings.name;document.title=settings.name}
+function openSettings(){$('sName').value=settings.name;$('setModal').classList.add('show')}
+function saveSettings(){settings.name=$('sName').value.trim()||'مكتبتي الإلكترونية';try{localStorage.setItem(SKEY,JSON.stringify(settings))}catch(e){}applySettings();closeModal('setModal');toast('تم الحفظ')}
+async function clearAll(){if(confirm('سيتم حذف جميع الكتب. (تُحفظ نسخة يمكنك استعادتها من «النسخ السابقة»)\nهل أنت متأكد؟')&&confirm('تأكيد أخير: حذف الكل؟')){await snapshot('قبل الحذف');books=[];persist();render();closeModal('setModal');toast('تم حذف كل البيانات')}}
+
+/* ماسح الباركود */
+let stream=null, scanTarget='check', scanning=false;
+async function startScan(target){
+  scanTarget=target;
+  if(!('BarcodeDetector' in window)){alert('مسح الباركود غير مدعوم في هذا المتصفح.\nجرّب Chrome على أندرويد، أو اكتب رقم ISBN يدوياً.');return}
+  try{
+    const det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v=$('video'); v.srcObject=stream; await v.play();
+    $('scanModal').classList.add('show'); scanning=true;
+    const loop=async()=>{
+      if(!scanning) return;
+      try{const c=await det.detect(v); if(c.length){const code=c[0].rawValue; stopScan(); gotCode(code); return}}catch(e){}
+      requestAnimationFrame(loop);
+    }; loop();
+  }catch(e){alert('تعذر فتح الكاميرا. تأكد من منح الإذن وأن الصفحة تعمل عبر https.')}
+}
+function stopScan(){scanning=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}closeModal('scanModal')}
+function gotCode(code){
+  if(navigator.vibrate) navigator.vibrate(100);
+  if(scanTarget==='form'){$('bIsbn').value=code;dupCheck()}
+  else{$('checkInput').value=code;doCheck()}
+  toast('تمت قراءة: '+code);
+}
+
+/* بيانات تجريبية */
+const SAMPLE=[
+ ['رياض الصالحين','يحيى بن شرف النووي','','دار ابن كثير','2007','','الحديث','العربية',1,'ورقي','رف 1','مقروء','2024-03-12','6.500','معرض مسقط للكتاب',5,''],
+ ['إحياء علوم الدين','أبو حامد الغزالي','','دار المنهاج','2011','الأولى','الفقه','العربية',10,'ورقي','رف 1','قيد القراءة','2024-03-12','45.000','معرض مسقط للكتاب',5,'طبعة محققة'],
+ ['الرحيق المختوم','صفي الرحمن المباركفوري','','دار السلام','2010','','السيرة','العربية',1,'ورقي','رف 1','مقروء','2023-02-20','3.000','مكتبة الضامري',5,''],
+ ['تفسير ابن كثير','إسماعيل بن كثير','','دار طيبة','1999','الثانية','القرآن وعلومه','العربية',8,'ورقي','رف 2','قيد القراءة','2023-02-20','28.000','مكتبة الضامري',5,''],
+ ['البرهان في علوم القرآن','بدر الدين الزركشي','','دار التراث','1984','','القرآن وعلومه','العربية',4,'إلكتروني (PDF)','الحاسوب','لم يُقرأ','','','',0,''],
+ ['مقدمة ابن خلدون','عبد الرحمن بن خلدون','','دار الفكر','2004','','التاريخ','العربية',1,'ورقي','رف 3','مقروء','2022-11-05','4.500','معرض مسقط للكتاب',4,''],
+ ['تحفة الأعيان بسيرة أهل عمان','نور الدين السالمي','','مكتبة الاستقامة','1997','','عُمان','العربية',2,'ورقي','رف 3','مقروء','2022-11-05','7.000','معرض مسقط للكتاب',5,''],
+ ['عمان عبر التاريخ','سالم بن حمود السيابي','','وزارة التراث والثقافة','2014','','عُمان','العربية',4,'ورقي','رف 3','لم يُقرأ','2025-02-28','12.000','معرض مسقط للكتاب',0,''],
+ ['البداية والنهاية','إسماعيل بن كثير','','دار هجر','1998','','التاريخ','العربية',21,'إلكتروني (PDF)','الحاسوب','لم يُقرأ','','','',0,''],
+ ['الأيام','طه حسين','','دار المعارف','1992','','الأدب','العربية',1,'ورقي','رف 4','مقروء','2021-06-14','2.000','مكتبة بيت الغشام',4,''],
+ ['ثلاثية غرناطة','رضوى عاشور','','دار الشروق','2008','','الرواية','العربية',1,'ورقي','رف 4','مُعار','2023-09-01','5.500','مكتبة بيت الغشام',5,''],
+ ['سيدات القمر','جوخة الحارثي','','دار الآداب','2010','','الرواية','العربية',1,'ورقي','رف 4','مقروء','2023-09-01','4.000','مكتبة بيت الغشام',4,'رواية عمانية'],
+ ['ديوان المتنبي','أبو الطيب المتنبي','','دار صادر','2005','','الشعر','العربية',1,'ورقي','رف 4','قيد القراءة','2022-04-10','3.500','',4,''],
+ ['جامع الدروس العربية','مصطفى الغلاييني','','المكتبة العصرية','2006','','اللغة العربية','العربية',3,'ورقي','رف 5','قيد القراءة','2024-01-18','6.000','مكتبة الضامري',4,''],
+ ['العادات السبع للناس الأكثر فعالية','ستيفن كوفي','','مكتبة جرير','2015','','تطوير الذات','العربية',1,'ورقي','رف 5','مقروء','2020-08-22','5.000','مكتبة جرير',4,''],
+ ['لا تحزن','عائض القرني','','مكتبة العبيكان','2004','','تطوير الذات','العربية',1,'ورقي','رف 5','مقروء','2020-08-22','3.000','',4,''],
+ ['Atomic Habits','James Clear','','Avery','2018','','تطوير الذات','الإنجليزية',1,'ورقي','رف 6','قيد القراءة','2025-02-28','8.500','معرض مسقط للكتاب',5,'لتعلم الإنجليزية'],
+ ['الإدارة الاستراتيجية','نبيل مرسي خليل','','دار الجامعة الجديدة','2012','','الإدارة','العربية',1,'ورقي','المكتب','لم يُقرأ','2025-02-28','6.000','معرض مسقط للكتاب',0,''],
+ ['كليلة ودمنة','عبد الله بن المقفع','','دار الشروق','2010','','الأدب','العربية',1,'صوتي','الجوال','مقروء','','','',4,''],
+ ['قصص الأنبياء للأطفال','محمود المصري','','دار التقوى','2012','','الأطفال','العربية',4,'ورقي','غرفة الأطفال','مقروء','2024-03-12','5.000','معرض مسقط للكتاب',5,''],
+];
+function loadSample(){
+  const keys=['title','author','translator','publisher','year','edition','category','lang','volumes','format','shelf','status','date','price','source','rating','notes'];
+  const now=Date.now();
+  SAMPLE.forEach((r,i)=>{const o={id:'s'+i+'_'+now.toString(36),sample:true,added:now-i*1000,isbn:'',pages:'',lentTo:''};keys.forEach((k,j)=>o[k]=r[j]);if(o.status==='مُعار')o.lentTo='أخي سالم';books.push(o)});
+  persist(); render(); toast('تمت تعبئة '+SAMPLE.length+' كتاب تجريبي');
+}
+async function removeSample(){
+  const n=books.filter(b=>b.sample).length;
+  if(!n){toast('لا توجد بيانات تجريبية');return}
+  if(!confirm(`حذف ${n} كتاب تجريبي؟ (كتبك أنت لن تُحذف)`)) return;
+  await snapshot('قبل الحذف');
+  books=books.filter(b=>!b.sample); persist(); render(); doCheck(); closeModal('setModal'); toast('تم حذف البيانات التجريبية');
+}
+function sampleBanner(){
+  const has=books.some(b=>b.sample);
+  $('sampleBar').style.display=has?'flex':'none';
+}
+
+load(); applySettings();
+if(!books.length && !localStorage.getItem('eLibrary_sampleDone')){ try{localStorage.setItem('eLibrary_sampleDone','1')}catch(e){} loadSample(); }
+render();
+if(settings.daily===undefined){settings.daily=!FS_OK;saveS()}
+dailySnapshot(); initFile(); updateBkStatus();
+if('serviceWorker' in navigator&&location.protocol==='https:') navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
